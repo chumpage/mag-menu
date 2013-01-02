@@ -135,7 +135,10 @@ put it in mag-menu-key-maps for fast lookup."
           (defkey k `(mag-menu-add-argument
                       ',group ,(nth 2 k) ',(nth 3 k))))))
 
-    (push (cons name map) mag-menu-key-maps)
+    ;; I'm not sure why I need to (copy-tree group) here. Without it I get an
+    ;; error later on from erase-buffer in mag-menu-redraw:
+    ;; "let: Text is read-only"
+    (push (cons (copy-tree group) map) mag-menu-key-maps)
     map))
 
 (defvar mag-menu-prefix nil
@@ -240,7 +243,8 @@ highlighted before the description."
 
 (defun mag-menu-get-key-map (group)
   "Get or build the keymap for GROUP."
-  (or (cdr (assoc (car group) mag-menu-key-maps))
+  ;; Could use avl-tree (or similar) to go from linear to logarithmic lookup here
+  (or (cdr (assoc group mag-menu-key-maps))
       (mag-menu-build-keymap group)))
 
 (defun mag-menu-redraw (group)
