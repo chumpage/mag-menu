@@ -3,35 +3,47 @@
 (eval-when-compile (require 'cl))
 (require 'splitter)
 
-(defvar mag-menu-key-maps '()
-  "This will be filled lazily with proper `define-key' built
-keymaps as they're requested.")
-
 (defvar mag-menu-buf-name "*mag-menu*"
   "Name of the buffer.")
-
-;; !!! Why custom-options, custom-options-alist, current-args, and
-;; current-options? Are they all really necessary?
-(defvar mag-menu-custom-options '()
-  "List of custom options to pass to the command. Do not customize this.")
-
-(defvar mag-menu-custom-options-alist '())
-
-(defvar mag-menu-current-args '()
-  "Will contain the arguments to be passed to git.")
-
-(defvar mag-menu-current-options '()
-  "Will contain the arguments to be passed to git.")
-
-(defvar mag-menu-previous-window-config nil
-  "The pre-menu window configuration, which will be restored when
-mag-menu is finished.")
 
 (defvar mag-menu-use-splitter-shrink t
   "When set to t, use spl-shrink-window-layout to intelligently
 shrink the current window layout to make room for the menu
 window. If set to nil, instead crush the current layout when
 bringing up the menu window.")
+
+;; !!! Pass the user's options to the action function directly, instead of
+;; expecting the function to retrieve the options from this variable.
+(defvar mag-menu-custom-options '()
+  "List of custom options to pass to the command. Action
+functions can look at this variable to get the options the user
+chose. Do not customize this.")
+
+(defvar mag-menu-args-in-cols nil
+  "When true, draw arguments in columns as with switches and
+  options.")
+
+;; The vars below are for internal use
+
+;; !!! Replace current-args and current-options with custom-options
+(defvar mag-menu-current-args nil
+  "A hash-table of current argument set.")
+
+(defvar mag-menu-current-options '()
+  "Current option set.")
+
+(defvar mag-menu-previous-window-config nil
+  "The pre-menu window configuration, which will be restored when
+mag-menu is finished.")
+
+(defvar mag-menu-key-maps '()
+  "This will be filled lazily with proper `define-key' built
+keymaps as they're requested.")
+
+(defvar mag-menu-prefix nil
+  "For internal use.  Holds the prefix argument to the command
+that brought up the key-mode window, so it can be used by the
+command that's eventually invoked.")
 
 (defun mag-menu-key-defined-p (group key)
   "If KEY is defined as any of switch, argument or action within
@@ -141,29 +153,19 @@ put it in mag-menu-key-maps for fast lookup."
     (push (cons (copy-tree group) map) mag-menu-key-maps)
     map))
 
-(defvar mag-menu-prefix nil
-  "For internal use.  Holds the prefix argument to the command
-that brought up the key-mode window, so it can be used by the
-command that's eventually invoked.")
-
 (defun mag-menu-command (func)
   (let ((args '()))
     ;; why can't maphash return a list?!
     (maphash (lambda (k v)
                (push (concat k (shell-quote-argument v)) args))
              mag-menu-current-args)
-    (let ((mag-menu-custom-options (append args mag-menu-current-options))
-          (mag-menu-custom-options-alist (mag-menu-form-options-alist mag-menu-current-options
-                                                                      mag-menu-current-args))
+    (let ((mag-menu-custom-options (mag-menu-form-options-alist mag-menu-current-options
+                                                                mag-menu-current-args))
           (current-prefix-arg (or current-prefix-arg mag-menu-prefix)))
       (set-window-configuration mag-menu-previous-window-config)
       (when func
         (call-interactively func))
       (mag-menu-kill-buffer))))
-
-(defvar mag-menu-current-args nil
-  "A hash-table of current argument set (which will eventually
-  make it to the git command-line).")
 
 (defun mag-menu-add-argument (group arg-name input-func)
   (let ((input (funcall input-func (concat arg-name ": "))))
@@ -171,10 +173,6 @@ command that's eventually invoked.")
         (remhash arg-name mag-menu-current-args)
         (puthash arg-name input mag-menu-current-args))
    (mag-menu-redraw group)))
-
-(defvar mag-menu-current-options '()
-  "Current option set (which will eventually make it to the git
-  command-line).")
 
 (defun mag-menu-add-option (group option-name)
   "Toggles the appearance of OPTION-NAME in
@@ -276,10 +274,6 @@ highlighted before the description."
 (defun mag-menu-draw-header (header)
   "Draw a header with the correct face."
   (insert (propertize header 'face 'font-lock-keyword-face) "\n"))
-
-(defvar mag-menu-args-in-cols nil
-  "When true, draw arguments in columns as with switches and
-  options.")
 
 (defun mag-menu-draw-args (args)
   "Draw the args part of the menu."
