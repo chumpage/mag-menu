@@ -147,10 +147,7 @@ put it in mag-menu-key-maps for fast lookup."
           (defkey k `(mag-menu-add-argument
                       ',group ,(nth 2 k) ',(nth 3 k))))))
 
-    ;; I'm not sure why I need to (copy-tree group) here. Without it I get an
-    ;; error later on from erase-buffer in mag-menu-redraw:
-    ;; "let: Text is read-only"
-    (push (cons (copy-tree group) map) mag-menu-key-maps)
+    (push (cons group map) mag-menu-key-maps)
     map))
 
 (defun mag-menu-command (func)
