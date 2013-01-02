@@ -1,6 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 
-(eval-when-compile (require 'cl))
+(require 'cl)
 (require 'splitter)
 
 (defvar mag-menu-buf-name "*mag-menu*"
@@ -190,17 +190,17 @@ put it in mag-menu-key-maps for fast lookup."
 (defun mag-menu-extract-switches-and-args (options-alist)
   (let ((switches)
         (args (make-hash-table :test 'equal)))
-    (mapcar (lambda (option)
-              (if (null (cdr option))
-                  (push (car option) switches)
-                  (puthash (concat (car option) "=") (cdr option) args)))
-            options-alist)
+    (mapc (lambda (option)
+            (if (null (cdr option))
+                (push (car option) switches)
+                (puthash (concat (car option) "=") (cdr option) args)))
+          options-alist)
     (list (nreverse switches) args)))
 
 (defun mag-menu-form-options-alist (switches args)
   (let ((alist nil))
-    (mapcar (lambda (switch) (push (cons switch nil) alist))
-            switches)
+    (mapc (lambda (switch) (push (cons switch nil) alist))
+          switches)
     (maphash (lambda (name val) (push (cons (if (char-equal (aref name (- (length name) 1)) ?=)
                                                 (substring name 0 (- (length name) 1)))
                                             val)
