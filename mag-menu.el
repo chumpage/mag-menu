@@ -1,8 +1,11 @@
+;;; -*- lexical-binding: t -*-
+
 (eval-when-compile (require 'cl))
+(require 'splitter)
 
 (defvar mag-menu-key-maps '()
   "This will be filled lazily with proper `define-key' built
-  keymaps as they're requested.")
+keymaps as they're requested.")
 
 (defvar mag-menu-buf-name "*mag-menu*"
   "Name of the buffer.")
@@ -20,9 +23,15 @@
 (defvar mag-menu-current-options '()
   "Will contain the arguments to be passed to git.")
 
-;; !!! Remove
-(defvar mag-menu-log-mode-window-conf nil
-  "Will hold the pre-menu configuration of mag-menu.")
+(defvar mag-menu-previous-window-config nil
+  "The pre-menu window configuration, which will be restored when
+mag-menu is finished.")
+
+(defvar mag-menu-use-splitter-shrink t
+  "When set to t, use spl-shrink-window-layout to intelligently
+shrink the current window layout to make room for the menu
+window. If set to nil, instead crush the current layout when
+bringing up the menu window.")
 
 (defun mag-menu-key-defined-p (group key)
   "If KEY is defined as any of switch, argument or action within
@@ -95,16 +104,16 @@ put it in mag-menu-key-maps for fast lookup."
     (define-key map (kbd "TAB") 'mag-menu-jump-to-next-exec)
 
     ;; all maps should `quit' with `C-g' or `q'
-    (define-key map (kbd "C-g") `(lambda ()
-                                   (interactive)
-                                   (mag-menu-command nil)))
-    (define-key map (kbd "q")   `(lambda ()
-                                   (interactive)
-                                   (mag-menu-command nil)))
+    (define-key map (kbd "C-g") (lambda ()
+                                  (interactive)
+                                  (mag-menu-command nil)))
+    (define-key map (kbd "q") (lambda ()
+                                (interactive)
+                                (mag-menu-command nil)))
     ;; run help
-    (define-key map (kbd "?") `(lambda ()
-                                 (interactive)
-                                 (mag-menu-help ',name)))
+    (define-key map (kbd "?") (lambda ()
+                                (interactive)
+                                (mag-menu-help group)))
 
     (flet ((defkey (k action)
              (when (and (lookup-key map (car k))
@@ -120,11 +129,11 @@ put it in mag-menu-key-maps for fast lookup."
           (defkey k `(mag-menu-command ',(nth 2 k)))))
       (when switches
         (dolist (k switches)
-          (defkey k `(mag-menu-add-option ',name ,(nth 2 k)))))
+          (defkey k `(mag-menu-add-option ',group ,(nth 2 k)))))
       (when arguments
         (dolist (k arguments)
           (defkey k `(mag-menu-add-argument
-                      ',name ,(nth 2 k) ',(nth 3 k))))))
+                      ',group ,(nth 2 k) ',(nth 3 k))))))
 
     (push (cons name map) mag-menu-key-maps)
     map))
@@ -144,7 +153,7 @@ command that's eventually invoked.")
           (mag-menu-custom-options-alist (mag-menu-form-options-alist mag-menu-current-options
                                                                       mag-menu-current-args))
           (current-prefix-arg (or current-prefix-arg mag-menu-prefix)))
-      (set-window-configuration mag-menu-log-mode-window-conf)
+      (set-window-configuration mag-menu-previous-window-config)
       (when func
         (call-interactively func))
       (mag-menu-kill-buffer))))
@@ -205,12 +214,11 @@ highlighted before the description."
   (interactive)
   ;; save the window config to restore it as was (no need to make this
   ;; buffer local)
-  (setq mag-menu-log-mode-window-conf
-        (current-window-configuration))
+  (setq mag-menu-previous-window-config (current-window-configuration))
   ;; setup the mode, draw the buffer
   (let ((buf (get-buffer-create mag-menu-buf-name)))
-    (if mag-menu-setup-window-function
-        (select-window (funcall mag-menu-setup-window-function))
+    (if mag-menu-use-splitter-shrink
+        (select-window (spl-shrink-window-layout 'v (- window-safe-min-height)))
         (progn (delete-other-windows)
                (split-window-vertically)
                (other-window 1)))
