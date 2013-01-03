@@ -1,4 +1,41 @@
-;;; -*- lexical-binding: t -*-
+;;; mag-menu.el --- Intuitive keyboard-centric menu system
+;;
+;; Author: Steven Thomas
+;; Created: 02 Jan 2013
+;; Keywords: menu dialog
+;; Version: 0.1.0
+;; URL: https://github.com/chumpage/mag-menu
+;;
+;; Mag-menu is free software; you can redistribute it and/or modify it
+;; under the terms of the GNU General Public License as published by the
+;; Free Software Foundation; either version 3, or (at your option) any
+;; later version.
+;;
+;; Mag-menu is distributed in the hope that it will be useful, but
+;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;; General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with Magit.  If not, see <http://www.gnu.org/licenses/>.
+;;
+;;; Commentary:
+;;
+;; Mag-menu provides a menu system intended to be used as an emacs
+;; front-end to command line programs with lots of options (e.g. git or
+;; ack). It presents the options in a visually simple layout in a window
+;; at the bottom of the emacs frame, and makes it easy to toggle
+;; switches or set argument values using just the keyboard.
+;;
+;; Mag-menu is derived from the magit-key-mode.el file in magit. The
+;; code was pulled out to make it a standalone elpa package so it could
+;; more easily be used by packages other than magit, and also to make
+;; the code less specific to git. "Mag" in "mag-menu" is short for
+;; magic, but is also meant to suggest its heritage from magit.
+;;
+;; The main function is mag-menu.
+;;
+;;; Code:
 
 (require 'cl)
 (require 'splitter)
@@ -350,3 +387,9 @@ Returns the point before the actions part, if any."
     p))
 
 (provide 'mag-menu)
+
+;; Local Variables:
+;; lexical-binding: t
+;; End:
+
+;;; mag-menu.el ends here
