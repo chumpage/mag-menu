@@ -1,0 +1,5 @@
+I love [magit](https://github.com/magit/magit). It's one of my favorite extensions for emacs, making it easy to do even very complicated git operations. My favorite feature of magit is magit-key-mode, which is the interactive option picker that shows up at the bottom of the frame when you press 'l' to look at the log. Magit-key-mode provides an easy to use, keyboard-centric interface to lots of complicated git commands.
+
+After using magit for a while I realized there are a lot of other emacs modules like magit, in that they wrap command line programs that have tons of options. These modules would benefit from being able to expose the options using magit-key-mode. Mag-menu is a version of magit-key-mode that's designed to be used with other modules. It's a standalone elpa package, and doesn't depend on magit or have any git-specific stuff.
+
+As one example of a usage for mag-menu, I hooked it up to [full-ack](https://github.com/nschum/full-ack) to get [ack-menu](https://github.com/chumpage/ack-menu). I think there are lots of other emacs extensions out there that would benefit from a mag-menu front-end.

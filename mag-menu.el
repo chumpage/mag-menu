@@ -243,9 +243,55 @@ put it in mag-menu-key-maps for fast lookup."
     (nreverse alist)))
 
 (defun mag-menu (group &optional options-alist)
-  "Mode for mag-menu selection. All commands, switches and
-options can be toggled/actioned with the key combination
-highlighted before the description."
+  "Brings up a menu for the user to select options and then run
+actions, all of which are described by GROUP. GROUP should have
+the following form:
+
+  `(group-name
+     (man-page \"man-page\")
+     (actions
+      (\"r\" \"Run the command\" run-callback-function))
+     (switches
+      (\"-b\" \"Some on/off option\" \"--long-form-option-name\"))
+     (arguments
+      (\"-f\" \"Some option that takes a value\" \"--value=\" function-to-read-option-from-user)))
+
+The group-name value is a symbol describing the program whose
+options are being set (e.g. 'ack, 'git-log, etc). It's currently
+unused, but may be used in the future. Set it to something
+meaningful.
+
+Actions represent commands that can be run, switches are simple
+flags that the command can take, and arguments are options that
+take a value. Each of these can have multiple entries, although
+only one entry for each is used in the example above. The short
+name of each entry will be bound as a key in the mag-menu buffer,
+which will show up at the bottom of the frame. So in the example
+above, \"r\", \"-b\", and \"-f\" will all be bound as keyboard
+shortcuts.
+
+The optional OPTIONS-ALIST arg is an assoc list containing
+default values for the switches and arguments. The long form
+names should be used. An example would be
+
+  '((\"--switch1\") (\"--switch2\") (\"--argument1\" . \"value1\"))
+
+As with any assoc list, each element is a cons pair. Switches
+should appear in the cons pair alone, and for arguments, the car
+is the argument name (again, the long form name) and the cdr is
+the value.
+
+When the command callback function is run, the variable
+mag-menu-custom-options will contain an assoc list of all the
+switches and arguments the user set. This assoc list has the same
+form as OPTIONS-ALIST. It's recommended to copy
+mag-menu-custom-options to a separate variable (via copy-tree),
+and then pass this variable in as the OPTIONS-ALIST variable the
+next time you call mag-menu.
+
+You may want to look at ack-menu.el
+\(https://github.com/chumpage/ack-menu) for a complete example of
+how to use mag-menu."
   (interactive)
   ;; save the window config to restore it as was (no need to make this
   ;; buffer local)
