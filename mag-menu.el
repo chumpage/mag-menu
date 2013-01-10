@@ -2,9 +2,10 @@
 ;;
 ;; Author: Steven Thomas
 ;; Created: 02 Jan 2013
-;; Keywords: menu dialog
+;; Keywords: convenience
 ;; Version: 0.1.0
 ;; URL: https://github.com/chumpage/mag-menu
+;; Package-Requires: ((splitter "0.1.0"))
 ;;
 ;; Mag-menu is free software; you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by the
