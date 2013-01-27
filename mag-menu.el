@@ -50,13 +50,6 @@ shrink the current window layout to make room for the menu
 window. If set to nil, instead crush the current layout when
 bringing up the menu window.")
 
-;; !!! Pass the user's options to the action function directly, instead of
-;; expecting the function to retrieve the options from this variable.
-(defvar mag-menu-custom-options '()
-  "List of custom options to pass to the command. Action
-functions can look at this variable to get the options the user
-chose. Do not customize this.")
-
 (defvar mag-menu-args-in-cols nil
   "When true, draw arguments in columns as with switches and
   options.")
@@ -194,12 +187,12 @@ put it in mag-menu-key-maps for fast lookup."
     (maphash (lambda (k v)
                (push (concat k (shell-quote-argument v)) args))
              mag-menu-current-args)
-    (let ((mag-menu-custom-options (mag-menu-form-options-alist mag-menu-current-options
-                                                                mag-menu-current-args))
+    (let ((options-alist (mag-menu-form-options-alist mag-menu-current-options
+                                                      mag-menu-current-args))
           (current-prefix-arg (or current-prefix-arg mag-menu-prefix)))
       (set-window-configuration mag-menu-previous-window-config)
       (when func
-        (call-interactively func))
+        (funcall func options-alist))
       (mag-menu-kill-buffer))))
 
 (defun mag-menu-add-argument (group arg-name input-func)
@@ -282,13 +275,12 @@ should appear in the cons pair alone, and for arguments, the car
 is the argument name (again, the long form name) and the cdr is
 the value.
 
-When the command callback function is run, the variable
-mag-menu-custom-options will contain an assoc list of all the
-switches and arguments the user set. This assoc list has the same
-form as OPTIONS-ALIST. It's recommended to copy
-mag-menu-custom-options to a separate variable (via copy-tree),
-and then pass this variable in as the OPTIONS-ALIST variable the
-next time you call mag-menu.
+The callback function should take one argument, which is an assoc
+list of all the switches and arguments the user set. This assoc
+list has the same form as OPTIONS-ALIST. It's recommended to copy
+this options list to a separate variable (via copy-tree), and
+then pass this variable in as the OPTIONS-ALIST variable the next
+time you call mag-menu.
 
 You may want to look at ack-menu.el
 \(https://github.com/chumpage/ack-menu) for a complete example of
