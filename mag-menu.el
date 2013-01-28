@@ -76,6 +76,22 @@ keymaps as they're requested.")
 that brought up the key-mode window, so it can be used by the
 command that's eventually invoked.")
 
+(defun mag-menu-remove-option (options-alist name)
+  (remove* name options-alist :key 'car :test 'equal))
+
+(defun mag-menu-set-option (options-alist name val)
+  (setq options-alist (copy-tree options-alist))
+  (let ((opt (assoc name options-alist)))
+    (if opt
+        (setf (cdr opt) val)
+        (setq options-alist (append options-alist (list (cons name val))))))
+  options-alist)
+
+(defun mag-menu-toggle-switch (options-alist name)
+  (if (find name options-alist :key 'car :test 'equal)
+      (mag-menu-remove-option options-alist name)
+      (mag-menu-set-option options-alist name nil)))
+
 (defun mag-menu-key-defined-p (group key)
   "If KEY is defined as any of switch, argument or action within
 GROUP then return t"
@@ -172,11 +188,11 @@ put it in mag-menu-key-maps for fast lookup."
           (defkey k `(mag-menu-command ',(nth 2 k)))))
       (when switches
         (dolist (k switches)
-          (defkey k `(mag-menu-add-option ',group ,(nth 2 k)))))
+          (defkey k `(mag-menu-add-option ',group ,(nth 2 k) ',(nth 3 k)))))
       (when arguments
         (dolist (k arguments)
           (defkey k `(mag-menu-add-argument
-                      ',group ,(nth 2 k) ',(nth 3 k))))))
+                      ',group ,(nth 2 k) ',(nth 3 k) ',(nth 4 k))))))
 
     (push (cons group map) mag-menu-key-maps)
     map))
@@ -195,21 +211,42 @@ put it in mag-menu-key-maps for fast lookup."
         (funcall func options-alist))
       (mag-menu-kill-buffer))))
 
-(defun mag-menu-add-argument (group arg-name input-func)
-  (let ((input (funcall input-func (concat arg-name ": "))))
-    (if (= (length input) 0)
-        (remhash arg-name mag-menu-current-args)
-        (puthash arg-name input mag-menu-current-args))
-   (mag-menu-redraw group)))
+(defun mag-menu-add-argument (group arg-name callback history-var)
+  (let ((option-name (substring arg-name 0 (1- (length arg-name))))
+        (options-alist (mag-menu-form-options-alist mag-menu-current-options
+                                                    mag-menu-current-args)))
+    (setq options-alist (funcall callback option-name options-alist history-var))
+    (destructuring-bind (switches args) (mag-menu-extract-switches-and-args options-alist)
+      (setq mag-menu-current-options switches)
+      (setq mag-menu-current-args args)))
+  (mag-menu-redraw group))
 
-(defun mag-menu-add-option (group option-name)
+(defun mag-menu-add-option (group option-name callback)
   "Toggles the appearance of OPTION-NAME in
 `mag-menu-current-options'."
-  (if (not (member option-name mag-menu-current-options))
-      (add-to-list 'mag-menu-current-options option-name)
-    (setq mag-menu-current-options
-          (delete option-name mag-menu-current-options)))
+  (let ((options-alist (mag-menu-form-options-alist mag-menu-current-options
+                                                    mag-menu-current-args)))
+    (if callback
+        (setq options-alist (funcall callback option-name options-alist))
+        (setq options-alist (mag-menu-toggle-switch options-alist option-name)))
+    (destructuring-bind (switches args) (mag-menu-extract-switches-and-args options-alist)
+      (setq mag-menu-current-options switches)
+      (setq mag-menu-current-args args)))
   (mag-menu-redraw group))
+
+(defun mag-menu-read-generic (option-name options history-var)
+  ;; To automatically insert the last value in the prompt, use this line
+  ;; (read-from-minibuffer (concat option-name ": ") (car (symbol-value history-var)) nil nil `(,history-var . 1))
+  (let ((val (read-from-minibuffer (concat option-name ": ") nil nil nil 'history-var)))
+    (if (= (length val) 0)
+        (mag-menu-remove-option options option-name)
+        (mag-menu-set-option options option-name val))))
+
+(defun mag-menu-read-directory-name (option-name options history-var)
+  (let ((dir (read-directory-name (concat option-name ": "))))
+    (if (= (length dir) 0)
+        (mag-menu-remove-option options option-name)
+        (mag-menu-set-option options option-name dir))))
 
 (defun mag-menu-kill-buffer ()
   (interactive)
@@ -244,11 +281,11 @@ the following form:
   `(group-name
      (man-page \"man-page\")
      (actions
-      (\"r\" \"Run the command\" run-callback-function))
+      (\"r\" \"Run the command\" action-callback))
      (switches
-      (\"-b\" \"Some on/off option\" \"--long-form-option-name\"))
+      (\"-b\" \"Some on/off option\" \"--long-form-option-name\" switch-callback))
      (arguments
-      (\"-f\" \"Some option that takes a value\" \"--value=\" function-to-read-option-from-user)))
+      (\"-f\" \"Some option that takes a value\" \"--value=\" arg-callback history-var)))
 
 The group-name value is a symbol describing the program whose
 options are being set (e.g. 'ack, 'git-log, etc). It's currently
@@ -275,12 +312,30 @@ should appear in the cons pair alone, and for arguments, the car
 is the argument name (again, the long form name) and the cdr is
 the value.
 
-The callback function should take one argument, which is an assoc
-list of all the switches and arguments the user set. This assoc
-list has the same form as OPTIONS-ALIST. It's recommended to copy
-this options list to a separate variable (via copy-tree), and
-then pass this variable in as the OPTIONS-ALIST variable the next
-time you call mag-menu.
+The switch-callback function is optional. If present, it should
+be a function that takes two arguments: the first is the option
+name (long form), and the second is the current assoc list of
+options. The callback should return an options assoc list with
+the appropriate changes made. You may find the
+mag-menu-toggle-switch function useful for toggling a switch
+value. If you don't provide a callback, the switch is simply
+toggled. Providing a callback is useful for example if some
+switches are mutually exclusive, and you want to disable switch A
+when switch B is activated.
+
+Unlike the switch-callback, the arg-callback is mandatory. It
+should be a function that takes three arguments: the option name,
+the options assoc list, and a history variable. It should prompt
+the user for the option value, then return an options assoc list
+with the appropriate changes made. Mag-menu provides some
+predefined callbacks are provided that may be suitable:
+mag-menu-read-generic, mag-menu-read-directory-name, etc.
+
+The action-callback is also mandatory. It should take just one
+value, the options assoc list. It's recommended to copy this list
+to a separate variable (via copy-tree), and then pass this
+variable in as the OPTIONS-ALIST variable the next time you call
+mag-menu.
 
 You may want to look at ack-menu.el
 \(https://github.com/chumpage/ack-menu) for a complete example of
