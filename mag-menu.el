@@ -237,7 +237,7 @@ put it in mag-menu-key-maps for fast lookup."
 (defun mag-menu-read-generic (option-name options history-var)
   ;; To automatically insert the last value in the prompt, use this line
   ;; (read-from-minibuffer (concat option-name ": ") (car (symbol-value history-var)) nil nil `(,history-var . 1))
-  (let ((val (read-from-minibuffer (concat option-name ": ") nil nil nil 'history-var)))
+  (let ((val (read-from-minibuffer (concat option-name ": ") nil nil nil history-var)))
     (if (= (length val) 0)
         (mag-menu-remove-option options option-name)
         (mag-menu-set-option options option-name val))))
