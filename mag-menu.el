@@ -1,4 +1,4 @@
-;;; mag-menu.el --- Intuitive keyboard-centric menu system
+;;; mag-menu.el --- Intuitive keyboard-centric menu system   -*- lexical-binding: t; -*-
 ;;
 ;; Author: Steven Thomas
 ;; Created: 02 Jan 2013
@@ -482,9 +482,5 @@ Returns the point before the actions part, if any."
     p))
 
 (provide 'mag-menu)
-
-;; Local Variables:
-;; lexical-binding: t
-;; End:
 
 ;;; mag-menu.el ends here
