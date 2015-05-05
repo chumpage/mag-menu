@@ -258,7 +258,7 @@ put it in mag-menu-key-maps for fast lookup."
         (mag-menu-remove-option options option-name)
         (mag-menu-set-option options option-name val))))
 
-(defun mag-menu-read-directory-name (option-name options history-var)
+(defun mag-menu-read-directory-name (option-name options _history-var)
   (let ((this-command "mag-menu-read-directory-name")
         (dir (read-directory-name (concat option-name ": "))))
     (if (= (length dir) 0)
