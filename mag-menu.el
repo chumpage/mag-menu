@@ -76,9 +76,11 @@ keymaps as they're requested.")
 that brought up the key-mode window, so it can be used by the
 command that's eventually invoked.")
 
+;;;###autoload
 (defun mag-menu-remove-option (options-alist name)
   (remove* name options-alist :key 'car :test 'equal))
 
+;;;###autoload
 (defun mag-menu-set-option (options-alist name val)
   (setq options-alist (copy-tree options-alist))
   (let ((opt (assoc name options-alist)))
@@ -87,6 +89,7 @@ command that's eventually invoked.")
         (setq options-alist (append options-alist (list (cons name val))))))
   options-alist)
 
+;;;###autoload
 (defun mag-menu-toggle-switch (options-alist name)
   (if (find name options-alist :key 'car :test 'equal)
       (mag-menu-remove-option options-alist name)
@@ -227,6 +230,7 @@ put it in mag-menu-key-maps for fast lookup."
         (funcall func options-alist))
       (mag-menu-kill-buffer))))
 
+;;;###autoload
 (defun mag-menu-add-argument (group arg-name callback history-var)
   (let ((option-name (substring arg-name 0 (1- (length arg-name))))
         (options-alist (mag-menu-form-options-alist mag-menu-current-options
@@ -290,6 +294,7 @@ put it in mag-menu-key-maps for fast lookup."
              args)
     (nreverse alist)))
 
+;;;###autoload
 (defun mag-menu (group &optional options-alist)
   "Brings up a menu for the user to select options and then run
 actions, all of which are described by GROUP. GROUP should have
