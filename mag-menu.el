@@ -92,6 +92,22 @@ command that's eventually invoked.")
       (mag-menu-remove-option options-alist name)
       (mag-menu-set-option options-alist name nil)))
 
+(defun mag-menu-current-window-configuration ()
+  "Get the current window configuration. Pass the returned value
+  to mag-menu-set-window-configuration to restore the window
+  config. This works just like current-window-configuration /
+  set-window-configuration, except that the point in the current
+  buffer is also restored."
+  (list (current-window-configuration) (window-point)))
+
+(defun mag-menu-set-window-configuration (config)
+  "Restore the window configuration using a value returned from
+  mag-menu-current-window-configuration. This works just like
+  current-window-configuration / set-window-configuration, except
+  that the point in the current buffer is also restored."
+  (set-window-configuration (car config))
+  (set-window-point nil (cadr config)))
+
 (defun mag-menu-key-defined-p (group key)
   "If KEY is defined as any of switch, argument or action within
 GROUP then return t"
@@ -206,7 +222,7 @@ put it in mag-menu-key-maps for fast lookup."
     (let ((options-alist (mag-menu-form-options-alist mag-menu-current-options
                                                       mag-menu-current-args))
           (current-prefix-arg (or current-prefix-arg mag-menu-prefix)))
-      (set-window-configuration mag-menu-previous-window-config)
+      (mag-menu-set-window-configuration mag-menu-previous-window-config)
       (when func
         (funcall func options-alist))
       (mag-menu-kill-buffer))))
@@ -344,7 +360,7 @@ how to use mag-menu."
   (interactive)
   ;; save the window config to restore it as was (no need to make this
   ;; buffer local)
-  (setq mag-menu-previous-window-config (current-window-configuration))
+  (setq mag-menu-previous-window-config (mag-menu-current-window-configuration))
   ;; setup the mode, draw the buffer
   (let ((buf (get-buffer-create mag-menu-buf-name)))
     (if mag-menu-use-splitter-shrink
